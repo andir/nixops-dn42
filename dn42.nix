@@ -101,6 +101,33 @@ in
                 };
               };
             };
+            xuude = {
+              tunnelType = "wireguard";
+              mtu = 1400;
+              wireguardConfig = {
+                localPort = 51004;
+                endpoint = "rishi.sour.is:50135";
+                publicKey = "rYU6GEhyhVctEvIxoO8PQ6OVAATgLnejL+JDk/Gr1yg=";
+                privateKey = secrets.keys.xuude;
+              };
+              bgp = {
+                asn = 64737;
+                local_pref = 100;
+              };
+              addresses = {
+                ipv4 = {
+                  local_address = "172.20.25.102";
+                  remote_address = "172.22.141.148";
+                  cidr = 32;
+                };
+                ipv6 = {
+                  local_address = "fe80::f00";
+                  remote_address = "fe80::1";
+                  cidr = 64;
+                };
+              };
+            };
+
           };
   };
 }
