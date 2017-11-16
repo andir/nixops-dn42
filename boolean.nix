@@ -20,7 +20,7 @@
 
       nix.binaryCaches = [ "https://cache.nix.h4ck.space/" "http://cache.nixos.org/" ];
 
-      environment.systemPackages = with pkgs; [ tcpdump vim ];
+      environment.systemPackages = with pkgs; [ tcpdump vim mtr ];
 
       boot.tmpOnTmpfs = true;
 
