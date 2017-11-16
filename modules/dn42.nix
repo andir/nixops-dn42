@@ -239,9 +239,6 @@ with lib;
       after = [ "nss-lookup.target" "network-online.target" ];
     })) wireguardPeers;
 
-    birdDontRestart = { }
-                      // (if enableBird4 then { bird = { restartIfChanged = false; }; } else {})
-                      // (if enableBird6 then { bird6 = { restartIfChanged = false; }; } else {});
 
   in lib.mkIf cfg.enable {
     networking.wireguard.interfaces = wireguardInterfaces;
@@ -274,7 +271,6 @@ with lib;
           ${pkgs.iproute}/bin/ip rule del to 172.16.0.0/12 lookup ${toString cfg.table}
         '';
       };
-    } // wireguardAfterResolved
-      // birdDontRestart;
+    } // wireguardAfterResolved;
   };
 }
