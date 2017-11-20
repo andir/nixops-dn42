@@ -226,11 +226,14 @@ with lib;
       }
     '';
 
-    mkBirdFirewallRules = version: let
+    mkFirewallRules = version: let
       peers = birdPeers.${version};
       prefix = if version == "ipv4" then "ip" else "ip6";
       mkPeerFirewall = name: peer: ''
         ${prefix}tables -A nixos-fw -i ${name} -p tcp -s ${peer.addresses.${version}.remote_address}  --dport 179 -j ACCEPT
+        ${
+          concatStringsSep "\n" (mapAttrsToList (p: v: if p != name then "${prefix}tables -A FORWARD -i ${name} -o ${p} -j ACCEPT" else "") peers)
+        }
       '';
     in (concatStrings (mapAttrsToList (mkPeerFirewall) peers));
 
@@ -243,8 +246,9 @@ with lib;
     networking.wireguard.interfaces = wireguardInterfaces;
     networking.firewall.allowedUDPPorts = wireguardPorts;
     networking.firewall.extraCommands = concatStringsSep "\n" ([]
-      ++ (optional (enableBird4) (mkBirdFirewallRules "ipv4"))
-      ++ (optional (enableBird6) (mkBirdFirewallRules "ipv6"))
+      ++ (optional (enableBird4) (mkFirewallRules "ipv4"))
+      ++ (optional (enableBird6) (mkFirewallRules "ipv6"))
+      ++ ["ip46tables -A FORWARD -j DROP"]
     );
 
     systemd.network.networks = wireguardNetworks;
