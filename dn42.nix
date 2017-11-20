@@ -21,6 +21,8 @@ in
             };
           };
 
+          additionalInterfaces = [ "epsilon" "ranzbook" ];
+
           peers = {
             cccda = {
               tunnelType = "wireguard";

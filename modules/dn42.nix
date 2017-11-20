@@ -15,6 +15,11 @@ with lib;
         default = 42;
       };
 
+      additionalInterfaces = mkOption {
+        default = [];
+        type = types.listOf types.str;
+      };
+
       bgp = mkOption {
         type = types.submodule {
           options = {
@@ -106,7 +111,6 @@ with lib;
        listenPort = peer.wireguardConfig.localPort;
        privateKey = peer.wireguardConfig.privateKey;
        allowedIPsAsRoutes = false;
-       table = cfg.table;
        peers = [
        (
           (if (builtins.hasAttr "endpoint" peer.wireguardConfig) then { endpoint = peer.wireguardConfig.endpoint; }
@@ -145,7 +149,10 @@ with lib;
     enableBird4 = (builtins.any (x: true) (builtins.attrValues birdPeers.ipv4)) == true;
 
     # common bird configuration
-    commonBirdConfig = if (enableBird4 || enableBird6) then ''
+    commonBirdConfig = if (enableBird4 || enableBird6) then let
+      interfaceNames = attrNames wireguardPeers ++ cfg.additionalInterfaces;
+    in
+    ''
       router id ${cfg.bgp.routerId};
       define MY_ASN = ${toString cfg.bgp.asn};
 
@@ -153,18 +160,20 @@ with lib;
         scan time 60;
       };
 
-      protocol direct d_dn42 {
-        interface "dn42_*";
-      }
-
       table dn42;
+      ${ if (length interfaceNames) > 0 then ''
+      protocol direct d_dn42 {
+        table dn42;
+        interface ${concatStringsSep ", " (map (n: "\"" + n + "\"") interfaceNames)};
+      }
+      '' else ""}
 
       protocol kernel k_dn42 {
-
         table dn42;
         kernel table ${toString cfg.table};
         import all;
         export all;
+        device routes yes;
         persist;
       }
 
@@ -235,7 +244,13 @@ with lib;
           concatStringsSep "\n" (mapAttrsToList (p: v: if p != name then "${prefix}tables -A FORWARD -i ${name} -o ${p} -j ACCEPT" else "") peers)
         }
       '';
-    in (concatStrings (mapAttrsToList (mkPeerFirewall) peers));
+      additionalFirewallRules = iface:
+        concatStrings (
+          (mapAttrsToList (p: v: "${prefix}tables -A FORWARD -i ${p} -o ${iface} -j ACCEPT\n") peers)
+          ++ (mapAttrsToList (p: v: "${prefix}tables -A FORWARD -o ${p} -i ${iface} -j ACCEPT\n") peers)
+      );
+      rules = (concatStrings ((mapAttrsToList (mkPeerFirewall) peers) ++ (map additionalFirewallRules cfg.additionalInterfaces)));
+    in rules;
 
     wireguardAfterResolved = mapAttrs' (name: value: nameValuePair ("wireguard-" + name) ({
       after = [ "nss-lookup.target" "network-online.target" ];
