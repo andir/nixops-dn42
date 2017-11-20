@@ -10,7 +10,6 @@ with lib;
     dn42 = {
       enable = mkEnableOption "enable dn42 configuration";
 
-
       table = mkOption {
         type = types.ints.unsigned;
         default = 42;
