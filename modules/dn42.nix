@@ -242,7 +242,12 @@ with lib;
     })) wireguardPeers;
 
 
+
   in lib.mkIf cfg.enable {
+    boot.kernel.sysctl."net.ipv4.all.forwarding" = true;
+    boot.kernel.sysctl."net.ipv4.all.default" = true;
+    boot.kernel.sysctl."net.ipv6.all.forwarding" = true;
+
     networking.wireguard.interfaces = wireguardInterfaces;
     networking.firewall.allowedUDPPorts = wireguardPorts;
     networking.firewall.extraCommands = concatStringsSep "\n" ([]
